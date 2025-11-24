@@ -7,8 +7,8 @@ use App\Services\Helper;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Event;
-use Modules\CustomProfileTabs\Models\UserCustomData;
-use Modules\CustomProfileTabs\Models\CustomerCustomData;
+use Modules\CustomProfileTabs\Models\CustomFieldDefinition;
+use Modules\CustomProfileTabs\Models\CustomFieldValue;
 use Modules\CustomProfileTabs\Listeners\SaveUserCustomDataListener;
 use Modules\CustomProfileTabs\Listeners\SaveCustomerCustomDataListener;
 use App\Events\CustomerAfterCreatedEvent;
@@ -29,6 +29,9 @@ class CustomProfileTabsServiceProvider extends ServiceProvider
      */
     public function boot()
     {
+        // Load views
+        $this->loadViewsFrom(__DIR__ . '/../Resources/Views', 'CustomProfileTabs');
+
         // Add custom tab to user profile
         Hook::addFilter('ns-user-profile-form', [$this, 'addUserProfileTab']);
 
@@ -44,70 +47,63 @@ class CustomProfileTabsServiceProvider extends ServiceProvider
     }
 
     /**
-     * Add custom tab to user profile form
+     * Add custom tab to user profile form (dynamically loaded from database)
      *
      * @param array $tabs
      * @return array
      */
     public function addUserProfileTab($tabs)
     {
-        // Get existing custom data for the user
-        $customData = UserCustomData::where('user_id', Auth::id())->first();
+        // Get active field definitions for user profiles
+        $fieldDefinitions = CustomFieldDefinition::getActiveFields('user');
 
-        $tabs['custom'] = [
-            'label' => __('Custom Info'),
-            'fields' => [
-                [
-                    'label' => __('Company Name'),
-                    'name' => 'company_name',
-                    'value' => $customData->company_name ?? '',
-                    'type' => 'text',
-                    'description' => __('Enter your company name.'),
-                ],
-                [
-                    'label' => __('Job Title'),
-                    'name' => 'job_title',
-                    'value' => $customData->job_title ?? '',
-                    'type' => 'text',
-                    'description' => __('Enter your job title.'),
-                ],
-                [
-                    'label' => __('Department'),
-                    'name' => 'department',
-                    'value' => $customData->department ?? '',
-                    'type' => 'select',
-                    'options' => Helper::kvToJsOptions([
-                        '' => __('Select Department'),
-                        'sales' => __('Sales'),
-                        'management' => __('Management'),
-                        'support' => __('Support'),
-                        'technical' => __('Technical'),
-                        'other' => __('Other'),
-                    ]),
-                    'description' => __('Select your department.'),
-                ],
-                [
-                    'label' => __('Bio'),
-                    'name' => 'bio',
-                    'value' => $customData->bio ?? '',
-                    'type' => 'textarea',
-                    'description' => __('Tell us about yourself.'),
-                ],
-                [
-                    'label' => __('LinkedIn Profile'),
-                    'name' => 'linkedin_url',
-                    'value' => $customData->linkedin_url ?? '',
-                    'type' => 'text',
-                    'description' => __('Enter your LinkedIn profile URL.'),
-                ],
-            ],
+        if ($fieldDefinitions->isEmpty()) {
+            return $tabs;
+        }
+
+        // Get existing values for the current user
+        $existingValues = CustomFieldValue::where('entity_id', Auth::id())
+            ->where('entity_type', 'user')
+            ->get()
+            ->keyBy('field_id');
+
+        // Build fields array
+        $fields = [];
+        foreach ($fieldDefinitions as $fieldDef) {
+            $value = $existingValues->get($fieldDef->id)->value ?? '';
+
+            $field = [
+                'label' => $fieldDef->label,
+                'name' => $fieldDef->name,
+                'value' => $value,
+                'type' => $fieldDef->type,
+                'description' => $fieldDef->description ?? '',
+            ];
+
+            // Add validation if specified
+            if ($fieldDef->validation) {
+                $field['validation'] = $fieldDef->validation;
+            }
+
+            // Add options for select fields
+            if ($fieldDef->type === 'select' && $fieldDef->options) {
+                $field['options'] = Helper::kvToJsOptions($fieldDef->options);
+            }
+
+            $fields[] = $field;
+        }
+
+        // Add the custom tab
+        $tabs['custom_fields'] = [
+            'label' => __('Custom Fields'),
+            'fields' => $fields,
         ];
 
         return $tabs;
     }
 
     /**
-     * Add custom tab to customer CRUD form
+     * Add custom tab to customer CRUD form (dynamically loaded from database)
      *
      * @param array $form
      * @param string $namespace
@@ -120,67 +116,55 @@ class CustomProfileTabsServiceProvider extends ServiceProvider
             return $form;
         }
 
-        // Get the customer ID if editing (from URL or entry)
+        // Get active field definitions for customer profiles
+        $fieldDefinitions = CustomFieldDefinition::getActiveFields('customer');
+
+        if ($fieldDefinitions->isEmpty()) {
+            return $form;
+        }
+
+        // Get the customer ID if editing
         $customerId = request()->route('id');
-        $customData = null;
+        $existingValues = collect();
 
         if ($customerId) {
-            $customData = CustomerCustomData::where('customer_id', $customerId)->first();
+            $existingValues = CustomFieldValue::where('entity_id', $customerId)
+                ->where('entity_type', 'customer')
+                ->get()
+                ->keyBy('field_id');
+        }
+
+        // Build fields array
+        $fields = [];
+        foreach ($fieldDefinitions as $fieldDef) {
+            $value = $existingValues->get($fieldDef->id)->value ?? '';
+
+            $field = [
+                'label' => $fieldDef->label,
+                'name' => $fieldDef->name,
+                'value' => $value,
+                'type' => $fieldDef->type,
+                'description' => $fieldDef->description ?? '',
+            ];
+
+            // Add validation if specified
+            if ($fieldDef->validation) {
+                $field['validation'] = $fieldDef->validation;
+            }
+
+            // Add options for select fields
+            if ($fieldDef->type === 'select' && $fieldDef->options) {
+                $field['options'] = Helper::kvToJsOptions($fieldDef->options);
+            }
+
+            $fields[] = $field;
         }
 
         // Add custom tab to the tabs array
         $form['tabs'][] = [
-            'label' => __('Custom Data'),
-            'identifier' => 'custom_data',
-            'fields' => [
-                [
-                    'label' => __('Preferred Contact Method'),
-                    'name' => 'preferred_contact',
-                    'value' => $customData->preferred_contact ?? '',
-                    'type' => 'select',
-                    'options' => Helper::kvToJsOptions([
-                        '' => __('Select Method'),
-                        'email' => __('Email'),
-                        'phone' => __('Phone'),
-                        'sms' => __('SMS'),
-                    ]),
-                    'description' => __('How should we contact this customer?'),
-                ],
-                [
-                    'label' => __('Customer Type'),
-                    'name' => 'customer_type',
-                    'value' => $customData->customer_type ?? '',
-                    'type' => 'select',
-                    'options' => Helper::kvToJsOptions([
-                        '' => __('Select Type'),
-                        'retail' => __('Retail'),
-                        'wholesale' => __('Wholesale'),
-                        'vip' => __('VIP'),
-                    ]),
-                    'description' => __('Specify the customer type.'),
-                ],
-                [
-                    'label' => __('Tax ID / VAT Number'),
-                    'name' => 'tax_id',
-                    'value' => $customData->tax_id ?? '',
-                    'type' => 'text',
-                    'description' => __('Enter customer tax ID or VAT number.'),
-                ],
-                [
-                    'label' => __('Notes'),
-                    'name' => 'notes',
-                    'value' => $customData->notes ?? '',
-                    'type' => 'textarea',
-                    'description' => __('Add any special notes about this customer.'),
-                ],
-                [
-                    'label' => __('Referral Source'),
-                    'name' => 'referral_source',
-                    'value' => $customData->referral_source ?? '',
-                    'type' => 'text',
-                    'description' => __('How did this customer find us?'),
-                ],
-            ],
+            'label' => __('Custom Fields'),
+            'identifier' => 'custom_fields',
+            'fields' => $fields,
         ];
 
         return $form;

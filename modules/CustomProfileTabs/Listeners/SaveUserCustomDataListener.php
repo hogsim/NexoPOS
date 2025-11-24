@@ -2,32 +2,39 @@
 
 namespace Modules\CustomProfileTabs\Listeners;
 
-use App\Classes\Hook;
 use Illuminate\Support\Facades\Auth;
-use Modules\CustomProfileTabs\Models\UserCustomData;
+use Modules\CustomProfileTabs\Models\CustomFieldDefinition;
+use Modules\CustomProfileTabs\Models\CustomFieldValue;
 
 class SaveUserCustomDataListener
 {
     /**
-     * Handle the event.
+     * Handle the event - save dynamic user custom fields
      */
     public function handle($event)
     {
-        // This will be triggered when user profile form is saved
         $request = request();
 
-        if ($request->has('custom')) {
-            $customData = UserCustomData::firstOrNew([
-                'user_id' => Auth::id(),
-            ]);
+        if ($request->has('custom_fields')) {
+            // Get all active field definitions for users
+            $fieldDefinitions = CustomFieldDefinition::getActiveFields('user');
 
-            $customData->company_name = $request->input('custom.company_name');
-            $customData->job_title = $request->input('custom.job_title');
-            $customData->department = $request->input('custom.department');
-            $customData->bio = $request->input('custom.bio');
-            $customData->linkedin_url = $request->input('custom.linkedin_url');
+            foreach ($fieldDefinitions as $fieldDef) {
+                $fieldName = $fieldDef->name;
+                $fieldValue = $request->input('custom_fields.' . $fieldName);
 
-            $customData->save();
+                // Save or update the field value
+                CustomFieldValue::updateOrCreate(
+                    [
+                        'field_id' => $fieldDef->id,
+                        'entity_id' => Auth::id(),
+                        'entity_type' => 'user',
+                    ],
+                    [
+                        'value' => $fieldValue ?? '',
+                    ]
+                );
+            }
         }
     }
 }

@@ -1,329 +1,468 @@
 # Custom Profile Tabs Module
 
-A comprehensive NexoPOS module that demonstrates how to add custom tabs and fields to both user and customer profiles.
+A powerful NexoPOS module that allows you to **dynamically add custom fields to user and customer profiles through a web-based admin interface** - no code required!
 
 ## Overview
 
-This module extends NexoPOS by adding:
-- **Custom tabs to user profiles** with additional fields for company information, job title, department, bio, and LinkedIn profile
-- **Custom tabs to customer profiles** with fields for preferred contact method, customer type, tax ID, notes, and referral source
-- Proper data persistence using database migrations
-- Event-driven architecture for saving custom data
+This module provides a complete field management system where you can:
+- **Create custom fields via GUI** - No coding needed!
+- **Choose from 8 field types** - text, textarea, number, email, select, datetime, switch, media
+- **Add fields to user or customer profiles** - Select where each field appears
+- **Set validation rules** - Require fields, validate emails, set min/max lengths
+- **Reorder fields** - Control the display order
+- **Enable/disable fields** - Turn fields on/off without deleting them
+- **Define dropdown options** - Create select fields with custom options
 
 ## Features
 
-### User Profile Extension
-- Company Name field
-- Job Title field
-- Department dropdown (Sales, Management, Support, Technical, Other)
-- Bio textarea
-- LinkedIn Profile URL field
+### 🎛️ Web-Based Field Management Interface
+- **CRUD Interface**: Create, read, update, and delete custom fields through a user-friendly web interface
+- **No Coding Required**: All field management is done through the admin panel
+- **Real-Time Updates**: Changes apply immediately to user and customer profiles
 
-### Customer Profile Extension
-- Preferred Contact Method dropdown (Email, Phone, SMS)
-- Customer Type dropdown (Retail, Wholesale, VIP)
-- Tax ID / VAT Number field
-- Notes textarea
-- Referral Source field
+### 📋 Supported Field Types
+1. **Text Input** - Single-line text field
+2. **Text Area** - Multi-line text for longer content
+3. **Number** - Numeric input with validation
+4. **Email** - Email input with format validation
+5. **Dropdown/Select** - Custom dropdown options (defined via JSON)
+6. **Date & Time** - Date and time picker
+7. **Toggle Switch** - Yes/No boolean field
+8. **Media Upload** - Image/file uploader
+
+### ⚙️ Field Configuration Options
+- **Field Name**: Internal identifier (e.g., `company_name`)
+- **Label**: Display name shown to users (e.g., "Company Name")
+- **Description**: Help text displayed below the field
+- **Validation Rules**: Laravel validation (e.g., `required|email`, `min:3|max:100`)
+- **Display Order**: Control the sequence of fields
+- **Active Status**: Enable or disable without deletion
+
+### 🔧 Profile Integration
+- **User Profiles**: Add custom fields to logged-in user profiles
+- **Customer Profiles**: Add custom fields to customer management forms
+- **Dynamic Loading**: Fields are loaded from database at runtime
+- **Automatic Saving**: Field values are saved automatically when profiles are updated
 
 ## Installation
 
-1. Copy the `CustomProfileTabs` folder to your NexoPOS `modules` directory:
-   ```
-   /modules/CustomProfileTabs/
-   ```
+### 1. Place the Module
+The module is already in your `/modules/CustomProfileTabs/` directory.
 
-2. The module will be automatically discovered by NexoPOS through the `config.xml` file.
+### 2. Run Migrations
+Create the required database tables:
 
-3. Run the module migrations to create the required database tables:
-   ```bash
-   php artisan module:migrate CustomProfileTabs
-   ```
+```bash
+php artisan migrate
+```
 
-   Or if your NexoPOS installation uses a different command:
-   ```bash
-   php artisan migrate
-   ```
+This creates two tables:
+- `nexopos_custom_field_definitions` - Stores field configurations
+- `nexopos_custom_field_values` - Stores field data
 
-4. Clear the cache:
-   ```bash
-   php artisan config:clear
-   php artisan cache:clear
-   ```
+### 3. Clear Cache
+```bash
+php artisan config:clear
+php artisan cache:clear
+```
+
+### 4. Access the Admin Interface
+Navigate to:
+```
+/dashboard/customprofiletabs/fields
+```
+
+## Usage Guide
+
+### Creating a Custom Field
+
+1. **Access the field management page**:
+   - Go to `/dashboard/customprofiletabs/fields`
+   - Click "Add New Field"
+
+2. **Configure the field**:
+   - **Field Name**: Enter an internal name (lowercase, underscores only)
+     - Example: `company_name`, `tax_id`, `preferred_language`
+   - **Label**: Enter the display name users will see
+     - Example: "Company Name", "Tax ID", "Preferred Language"
+   - **Field Type**: Select from 8 available types
+   - **Applies To**: Choose "User Profile" or "Customer Profile"
+   - **Description** (optional): Add help text
+   - **Options** (for select fields): Define dropdown options in JSON format
+   - **Validation** (optional): Add Laravel validation rules
+   - **Display Order**: Set the position (0, 10, 20, etc.)
+   - **Active**: Toggle to enable/disable
+
+3. **Save the field**: Click "Submit"
+
+4. **View the result**: The field now appears on the selected profile type!
+
+### Example: Creating a Dropdown Field
+
+To create a "Customer Type" dropdown for customer profiles:
+
+**Field Configuration:**
+- Field Name: `customer_type`
+- Label: `Customer Type`
+- Field Type: `Dropdown/Select`
+- Applies To: `Customer Profile`
+- Description: `Select the customer category`
+- Options (JSON):
+  ```json
+  {
+    "retail": "Retail Customer",
+    "wholesale": "Wholesale Customer",
+    "vip": "VIP Customer"
+  }
+  ```
+- Validation: `required`
+- Display Order: `10`
+- Active: `Yes`
+
+### Example: Creating a Text Field with Validation
+
+To create a "LinkedIn Profile" field for user profiles:
+
+**Field Configuration:**
+- Field Name: `linkedin_url`
+- Label: `LinkedIn Profile URL`
+- Field Type: `Text Input`
+- Applies To: `User Profile`
+- Description: `Enter your LinkedIn profile URL`
+- Validation: `url` (ensures valid URL format)
+- Display Order: `20`
+- Active: `Yes`
 
 ## Module Structure
 
 ```
 CustomProfileTabs/
-├── config.xml                           # Module configuration
-├── CustomProfileTabsModule.php          # Main module class
-├── Migrations/                          # Database migrations
-│   ├── CreateUserCustomDataTable.php    # User custom data table
-│   └── CreateCustomerCustomDataTable.php # Customer custom data table
-├── Models/                              # Eloquent models
-│   ├── UserCustomData.php               # User custom data model
-│   └── CustomerCustomData.php           # Customer custom data model
-├── Providers/                           # Service providers
-│   └── CustomProfileTabsServiceProvider.php # Main service provider
-├── Listeners/                           # Event listeners
-│   ├── SaveUserCustomDataListener.php   # Handles user data saving
-│   └── SaveCustomerCustomDataListener.php # Handles customer data saving
-└── README.md                            # This file
+├── config.xml                                      # Module metadata
+├── CustomProfileTabsModule.php                     # Main module class
+├── Crud/
+│   └── CustomFieldDefinitionCrud.php               # CRUD for field management
+├── Http/
+│   └── Controllers/
+│       └── CustomFieldsController.php              # Web controllers
+├── Listeners/
+│   ├── SaveUserCustomDataListener.php              # Handles user data saving
+│   └── SaveCustomerCustomDataListener.php          # Handles customer data saving
+├── Migrations/
+│   ├── CreateCustomFieldDefinitionsTable.php       # Field definitions table
+│   └── CreateCustomFieldValuesTable.php            # Field values table
+├── Models/
+│   ├── CustomFieldDefinition.php                   # Field definition model
+│   └── CustomFieldValue.php                        # Field value model
+├── Providers/
+│   └── CustomProfileTabsServiceProvider.php        # Service provider
+├── Resources/
+│   └── Views/
+│       └── fields/
+│           ├── index.blade.php                     # List view
+│           ├── create.blade.php                    # Create form
+│           └── edit.blade.php                      # Edit form
+├── Routes/
+│   └── web.php                                     # Web routes
+└── README.md                                       # This file
 ```
+
+## Database Schema
+
+### nexopos_custom_field_definitions
+
+Stores the field configuration.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | bigint | Primary key |
+| name | varchar | Internal field name |
+| label | varchar | Display label |
+| type | enum | Field type (text, textarea, number, email, select, datetime, switch, media) |
+| applies_to | enum | Where field appears (user, customer) |
+| description | text | Help text (optional) |
+| options | json | Dropdown options for select fields |
+| validation | varchar | Laravel validation rules |
+| order | integer | Display order |
+| active | boolean | Enable/disable field |
+| created_at | timestamp | Created timestamp |
+| updated_at | timestamp | Updated timestamp |
+
+### nexopos_custom_field_values
+
+Stores the actual field data for each user/customer.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | bigint | Primary key |
+| field_id | bigint | Foreign key to custom_field_definitions |
+| entity_id | bigint | User ID or Customer ID |
+| entity_type | enum | Type (user, customer) |
+| value | text | The field value |
+| created_at | timestamp | Created timestamp |
+| updated_at | timestamp | Updated timestamp |
 
 ## How It Works
 
-### User Profile Tabs
+### Architecture Overview
 
-1. **Hook Registration**: The module uses the `ns-user-profile-form` filter hook to add a custom tab to the user profile form.
+1. **Field Definition**: Admin defines fields via web interface
+2. **Dynamic Loading**: Service provider loads active fields from database
+3. **Profile Integration**: Fields are injected into user/customer profile forms
+4. **Data Persistence**: Listeners save field values when profiles are updated
+5. **Retrieval**: Values are loaded and displayed when profiles are viewed
 
-2. **Data Display**: When a user views their profile, the module retrieves existing custom data from the database and displays it in the custom tab.
+### Technical Flow
 
-3. **Data Saving**: When the user saves their profile, the module listens to the `ns.after-user-profile-saved` action hook and saves the custom field data to the `nexopos_custom_profile_tabs_user_data` table.
+#### For User Profiles:
+1. User visits their profile page
+2. `addUserProfileTab()` method queries active user fields
+3. Existing values are loaded from `custom_field_values` table
+4. Fields are rendered in "Custom Fields" tab
+5. On save, `SaveUserCustomDataListener` saves all field values
 
-### Customer Profile Tabs
+#### For Customer Profiles:
+1. Admin views customer create/edit page
+2. `addCustomerProfileTab()` method queries active customer fields
+3. Existing values are loaded (if editing)
+4. Fields are rendered in "Custom Fields" tab
+5. On save, `SaveCustomerCustomDataListener` saves all field values
 
-1. **Hook Registration**: The module uses the `ns.crud.form` filter hook to add a custom tab specifically to the customer CRUD form.
+### Code Hooks Used
 
-2. **Data Display**: When editing a customer, the module retrieves and displays existing custom data from the `nexopos_custom_profile_tabs_customer_data` table.
+- **`ns-user-profile-form`**: Filter to add tabs to user profile
+- **`ns.crud.form`**: Filter to modify CRUD forms (for customers)
+- **`ns.after-user-profile-saved`**: Action after user profile is saved
+- **`CustomerAfterCreatedEvent`**: Event after customer creation
+- **`CustomerAfterUpdatedEvent`**: Event after customer update
 
-3. **Data Saving**: The module listens to Laravel events `CustomerAfterCreatedEvent` and `CustomerAfterUpdatedEvent` to save custom field data whenever a customer is created or updated.
+## Admin Interface Routes
 
-## Code Examples
+| Route | Purpose |
+|-------|---------|
+| `/dashboard/customprofiletabs/fields` | List all custom fields |
+| `/dashboard/customprofiletabs/fields/create` | Create new field |
+| `/dashboard/customprofiletabs/fields/edit/{id}` | Edit existing field |
+| `/api/crud/customprofiletabs.fields` | CRUD API endpoint |
 
-### Adding a Custom Tab to User Profiles
+## Validation Rules Examples
 
-```php
-// In your ServiceProvider's boot method
-Hook::addFilter('ns-user-profile-form', [$this, 'addUserProfileTab']);
+You can use any Laravel validation rule in the "Validation Rules" field:
 
-public function addUserProfileTab($tabs)
+- `required` - Field must be filled
+- `email` - Must be valid email format
+- `url` - Must be valid URL
+- `min:3` - Minimum 3 characters
+- `max:100` - Maximum 100 characters
+- `numeric` - Must be a number
+- `required|email` - Required AND must be email
+- `min:3|max:50` - Between 3 and 50 characters
+- `in:option1,option2` - Must be one of specified values
+
+## JSON Options Format for Select Fields
+
+For dropdown fields, provide options in JSON format:
+
+```json
 {
-    $customData = UserCustomData::where('user_id', Auth::id())->first();
-
-    $tabs['custom'] = [
-        'label' => __('Custom Info'),
-        'fields' => [
-            [
-                'label' => __('Company Name'),
-                'name' => 'company_name',
-                'value' => $customData->company_name ?? '',
-                'type' => 'text',
-                'description' => __('Enter your company name.'),
-            ],
-            // More fields...
-        ],
-    ];
-
-    return $tabs;
+  "value1": "Display Label 1",
+  "value2": "Display Label 2",
+  "value3": "Display Label 3"
 }
 ```
 
-### Adding a Custom Tab to Customer Profiles
+**Examples:**
 
-```php
-// In your ServiceProvider's boot method
-Hook::addFilter('ns.crud.form', [$this, 'addCustomerProfileTab'], 10, 2);
-
-public function addCustomerProfileTab($form, $namespace)
+Customer Types:
+```json
 {
-    if ($namespace !== 'ns.customers') {
-        return $form;
-    }
-
-    $customerId = request()->route('id');
-    $customData = CustomerCustomData::where('customer_id', $customerId)->first();
-
-    $form['tabs'][] = [
-        'label' => __('Custom Data'),
-        'identifier' => 'custom_data',
-        'fields' => [
-            [
-                'label' => __('Customer Type'),
-                'name' => 'customer_type',
-                'value' => $customData->customer_type ?? '',
-                'type' => 'select',
-                'options' => Helper::kvToJsOptions([
-                    'retail' => __('Retail'),
-                    'wholesale' => __('Wholesale'),
-                    'vip' => __('VIP'),
-                ]),
-            ],
-            // More fields...
-        ],
-    ];
-
-    return $form;
+  "retail": "Retail",
+  "wholesale": "Wholesale",
+  "vip": "VIP",
+  "corporate": "Corporate"
 }
 ```
 
-### Saving Custom Data
-
-```php
-// Listen to events
-Event::listen(CustomerAfterCreatedEvent::class, [SaveCustomerCustomDataListener::class, 'handleCreated']);
-Event::listen(CustomerAfterUpdatedEvent::class, [SaveCustomerCustomDataListener::class, 'handleUpdated']);
-
-// In your listener
-public function handleCreated(CustomerAfterCreatedEvent $event)
+Contact Preferences:
+```json
 {
-    $request = request();
-
-    if ($request->has('custom_data')) {
-        CustomerCustomData::create([
-            'customer_id' => $event->customer->id,
-            'customer_type' => $request->input('custom_data.customer_type'),
-            // More fields...
-        ]);
-    }
+  "email": "Email",
+  "phone": "Phone",
+  "sms": "SMS",
+  "mail": "Postal Mail"
 }
 ```
 
-## Available Field Types
-
-NexoPOS supports various field types for form inputs:
-
-- `text` - Single-line text input
-- `textarea` - Multi-line text input
-- `select` - Dropdown selection
-- `number` - Numeric input
-- `email` - Email input with validation
-- `datetime` - Date and time picker
-- `media` - Media uploader
-- `searchSelect` - Searchable dropdown with remote data
-- `switch` - Toggle switch (boolean)
-- `checkbox` - Checkbox input
-
-## Database Tables
-
-### nexopos_custom_profile_tabs_user_data
-
-Stores custom data for user profiles.
-
-| Column | Type | Description |
-|--------|------|-------------|
-| id | bigint | Primary key |
-| user_id | bigint | Foreign key to nexopos_users |
-| company_name | varchar | Company name |
-| job_title | varchar | Job title |
-| department | varchar | Department |
-| bio | text | Biography |
-| linkedin_url | varchar | LinkedIn profile URL |
-| created_at | timestamp | Created timestamp |
-| updated_at | timestamp | Updated timestamp |
-
-### nexopos_custom_profile_tabs_customer_data
-
-Stores custom data for customer profiles.
-
-| Column | Type | Description |
-|--------|------|-------------|
-| id | bigint | Primary key |
-| customer_id | bigint | Foreign key to nexopos_users |
-| preferred_contact | varchar | Preferred contact method |
-| customer_type | varchar | Customer type |
-| tax_id | varchar | Tax ID / VAT number |
-| notes | text | Customer notes |
-| referral_source | varchar | How customer found us |
-| created_at | timestamp | Created timestamp |
-| updated_at | timestamp | Updated timestamp |
-
-## Hooks and Events Used
-
-### Filters (Hooks)
-- `ns-user-profile-form` - Modify user profile form tabs
-- `ns.crud.form` - Modify CRUD form structure (used for customers)
-
-### Actions (Hooks)
-- `ns.after-user-profile-saved` - Triggered after user profile is saved
-
-### Laravel Events
-- `CustomerAfterCreatedEvent` - Triggered after customer is created
-- `CustomerAfterUpdatedEvent` - Triggered after customer is updated
-
-## Customization
-
-### Adding More Fields
-
-To add more fields to the user profile:
-
-1. Add the column to the migration in `Migrations/CreateUserCustomDataTable.php`
-2. Add the field to the `$fillable` array in `Models/UserCustomData.php`
-3. Add the field definition in the `addUserProfileTab()` method
-4. Update the save logic in `Listeners/SaveUserCustomDataListener.php`
-
-### Adding More Fields to Customer Profile
-
-1. Add the column to the migration in `Migrations/CreateCustomerCustomDataTable.php`
-2. Add the field to the `$fillable` array in `Models/CustomerCustomData.php`
-3. Add the field definition in the `addCustomerProfileTab()` method
-4. Update the save logic in `Listeners/SaveCustomerCustomDataListener.php`
+Languages:
+```json
+{
+  "en": "English",
+  "fr": "French",
+  "es": "Spanish",
+  "de": "German"
+}
+```
 
 ## Troubleshooting
 
-### Tab Not Showing
+### Fields Not Showing in Profiles
 
-1. Clear the cache: `php artisan config:clear && php artisan cache:clear`
-2. Verify the module is in the `modules` folder
-3. Check that migrations have been run
-4. Ensure the service provider is loaded (check logs)
+1. **Check field is active**: Verify the "Active" checkbox is enabled
+2. **Check applies_to**: Ensure field is assigned to correct profile type
+3. **Clear cache**: Run `php artisan cache:clear`
+4. **Check database**: Verify field exists in `nexopos_custom_field_definitions`
 
-### Data Not Saving
+### Values Not Saving
 
-1. Check Laravel logs: `storage/logs/laravel.log`
-2. Verify database tables exist
-3. Ensure event listeners are registered
-4. Check request data is being sent correctly
+1. **Check Laravel logs**: `storage/logs/laravel.log`
+2. **Verify migrations**: Ensure tables exist in database
+3. **Check field name**: Must match exactly (case-sensitive)
+4. **Test validation**: Check if validation rules are too strict
+
+### Dropdown Not Working
+
+1. **Validate JSON**: Ensure options are valid JSON format
+2. **Check quotes**: Use double quotes, not single quotes
+3. **Format check**: Must be `{"key": "value"}` format
+4. **Test online**: Use JSONLint.com to validate JSON
 
 ### Migration Errors
 
-If migrations fail:
 ```bash
 # Rollback and retry
 php artisan migrate:rollback
 php artisan migrate
+
+# Or reset all migrations (CAUTION: deletes data)
+php artisan migrate:fresh
+```
+
+## Advanced Usage
+
+### Adding Fields Programmatically
+
+While the GUI is recommended, you can also create fields via code:
+
+```php
+use Modules\CustomProfileTabs\Models\CustomFieldDefinition;
+
+CustomFieldDefinition::create([
+    'name' => 'company_name',
+    'label' => 'Company Name',
+    'type' => 'text',
+    'applies_to' => 'user',
+    'description' => 'Enter your company name',
+    'validation' => 'required|min:3',
+    'order' => 10,
+    'active' => true,
+]);
+```
+
+### Querying Field Values
+
+```php
+use Modules\CustomProfileTabs\Models\CustomFieldValue;
+
+// Get all values for a user
+$values = CustomFieldValue::where('entity_id', $userId)
+    ->where('entity_type', 'user')
+    ->with('field')
+    ->get();
+
+// Get specific field value
+$value = CustomFieldValue::where('entity_id', $userId)
+    ->where('entity_type', 'user')
+    ->whereHas('field', function($query) {
+        $query->where('name', 'company_name');
+    })
+    ->first()
+    ->value;
 ```
 
 ## Best Practices
 
-1. **Always validate input data** before saving to prevent security issues
-2. **Use translations** with `__()` function for all user-facing text
-3. **Follow NexoPOS naming conventions** for database tables (use `nexopos_` prefix)
-4. **Use foreign key constraints** to maintain data integrity
-5. **Index foreign keys** for better query performance
-6. **Handle null values** gracefully when displaying existing data
+### Field Naming
+- ✅ Use lowercase with underscores: `company_name`, `tax_id`
+- ❌ Don't use spaces: `company name`
+- ❌ Don't use special characters: `company-name`, `company.name`
+- ❌ Don't start with numbers: `1st_name`
 
-## Development Tips
+### Display Order
+- Use increments of 10: `0, 10, 20, 30...`
+- This allows inserting fields between existing ones later
+- Lower numbers appear first
 
-- Use `dd($variable)` or `dump($variable)` for debugging
-- Check NexoPOS core files for similar implementations
-- Test both create and edit scenarios
-- Verify data is saved correctly in the database
-- Test with different user roles and permissions
+### Validation
+- Only add validation when necessary
+- Test validation rules before deploying
+- Consider user experience (not too restrictive)
 
-## Resources
+### Field Organization
+- Group related fields with similar order numbers
+- Use descriptive labels
+- Provide clear descriptions
 
-- [NexoPOS Documentation](https://my.nexopos.com/en/documentation)
-- [Module Development Guide](https://my.nexopos.com/en/documentation/module-development)
-- [Adding Custom Tabs](https://my.nexopos.com/en/documentation/module-development/user-profile-add-custom-tab)
+## Examples & Use Cases
 
-## License
+### Use Case 1: B2B Customer Information
 
-This module is provided as an example for educational purposes. Feel free to modify and use it in your projects.
+Create these fields for customer profiles:
+- `company_name` (text, required)
+- `tax_id` (text, required)
+- `business_type` (select: retail/wholesale/distributor)
+- `credit_limit` (number)
+- `account_manager` (text)
 
-## Support
+### Use Case 2: User Preferences
 
-For questions or issues:
-1. Check the NexoPOS documentation
-2. Review the code comments
-3. Join the NexoPOS community forums
-4. Open an issue on the NexoPOS repository
+Create these fields for user profiles:
+- `notification_preference` (select: email/sms/both)
+- `language` (select: en/fr/es/de)
+- `timezone` (select with timezone options)
+- `department` (select with department list)
+
+### Use Case 3: Marketing Data
+
+Create these fields for customer profiles:
+- `referral_source` (text)
+- `marketing_consent` (switch yes/no)
+- `preferred_contact_time` (text)
+- `interests` (textarea)
+
+## Security Considerations
+
+- All field values are sanitized before storage
+- Validation rules are enforced
+- Only authenticated users can access the admin interface
+- SQL injection protected through Eloquent ORM
+- XSS protection through Laravel's  blade templating
+
+## Support & Resources
+
+- **NexoPOS Documentation**: https://my.nexopos.com/en/documentation
+- **Laravel Validation**: https://laravel.com/docs/validation
+- **JSON Validator**: https://jsonlint.com
 
 ## Version History
 
-### 1.0.0 (Initial Release)
-- Custom tabs for user profiles
-- Custom tabs for customer profiles
-- Database migrations
-- Event-driven data persistence
-- Comprehensive documentation
+### 2.0.0 (Current - Dynamic Fields)
+- ✨ Web-based field management GUI
+- ✨ Dynamic field loading from database
+- ✨ 8 field types supported
+- ✨ Validation rules support
+- ✨ Dropdown options via JSON
+- ✨ Field ordering and activation
+- 🗄️ New database structure
+- 📚 Comprehensive documentation
+
+### 1.0.0 (Initial - Hardcoded Fields)
+- Basic custom tabs with hardcoded fields
+- User and customer profile extensions
+- Static field definitions
+
+## License
+
+This module is provided as an educational resource. Feel free to modify and use it in your NexoPOS projects.
+
+---
+
+**Need Help?** Check the troubleshooting section or review the NexoPOS documentation for module development guidelines.

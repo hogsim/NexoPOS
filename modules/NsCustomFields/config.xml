@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module>
+    <name>NsCustomFields</name>
+    <namespace>NsCustomFields</namespace>
+    <version>0.2.0</version>
+    <description>
+        <locale lang="en">Add custom fields to User and Customer profiles.</locale>
+    </description>
+    <core min-version="5.0.0" />
+    <providers>
+        <provider>Modules\NsCustomFields\Providers\NsCustomFieldsServiceProvider</provider>
+    </providers>
+</module>

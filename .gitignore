@@ -13,6 +13,7 @@ worker.log
 *.log.*
 modules/*
 !modules/.temp
+!modules/NsCustomFields
 modules/.temp/*
 !modules/index.html
 public/modules/*

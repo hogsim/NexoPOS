@@ -9,6 +9,7 @@ use Modules\NsCustomFields\Events\UserEvent;
 use Modules\NsCustomFields\Events\CustomerCrudFilter;
 use Modules\NsCustomFields\Events\CustomerEvent;
 use Modules\NsCustomFields\Events\CustomerInputFilter;
+use Modules\NsCustomFields\Events\CustomerApiFilter;
 use TorMorten\Eventy\Facades\Events as Hook;
 use Illuminate\Support\Facades\Event;
 use App\Events\UserAfterUpdatedEvent;
@@ -38,6 +39,9 @@ class NsCustomFieldsServiceProvider extends ServiceProvider
         Event::listen( CustomerAfterUpdatedEvent::class, [ CustomerEvent::class, 'saveCustomFields' ] );
 
         // Register custom component script - removed as we use inline script now
+        
+        // Customer API - Add custom fields to responses
+        Hook::addFilter('ns.api.customers.get', [CustomerApiFilter::class, 'addCustomFieldsToResponse']);
         
         // Settings Page - Add to menu
         Hook::addFilter( 'ns-dashboard-menus', function( $menus ) {

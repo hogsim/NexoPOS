@@ -193,6 +193,19 @@
                                       placeholder="{{ __('Helper text for this field') }}"
                                       onchange="window.customFieldsManager.updateField(${index}, 'description', this.value)">${safeDesc}</textarea>
                         </div>
+                        
+                        <div class="md:col-span-2 flex items-center">
+                            <input 
+                                type="checkbox" 
+                                id="unique_${index}"
+                                class="mr-2"
+                                ${field.unique ? 'checked' : ''}
+                                onchange="window.customFieldsManager.updateField(${index}, 'unique', this.checked)"
+                            />
+                            <label for="unique_${index}" class="text-sm font-medium cursor-pointer">
+                                {{ __('Require unique value (prevent duplicates across customers)') }}
+                            </label>
+                        </div>
                     </div>
                 </div>
             `;
@@ -204,7 +217,8 @@
                 label: '',
                 name: '',
                 type: 'text',
-                description: ''
+                description: '',
+                unique: false
             });
             this.render();
         },

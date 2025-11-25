@@ -52,13 +52,43 @@ class CustomerEvent
         $hasData = false;
         foreach ( $fieldsConfig as $config ) {
             $fieldName = $config['name'];
-            // Check if the field exists in the nested custom_fields data
-            if ( isset( $customFieldsInput[ $fieldName ] ) ) {
-                $existingData[ $fieldName ] = $customFieldsInput[ $fieldName ];
+            // Check if the field exists in the nested custom_fields data (use array_key_exists to allow empty strings)
+            if ( array_key_exists( $fieldName, $customFieldsInput ) ) {
+                $fieldValue = $customFieldsInput[ $fieldName ];
+                
+                // Check uniqueness constraint if configured (only for non-empty values)
+                if ( isset($config['unique']) && $config['unique'] === true && !empty($fieldValue) ) {
+                    // Check if another customer already has this value
+                    $existingAttribute = UserAttribute::whereRaw(
+                        "JSON_EXTRACT(custom_fields, ?) = ? AND user_id != ?",
+                        ['$.' . $fieldName, $fieldValue, $customerId]
+                    )->first();
+                    
+                    if ( $existingAttribute ) {
+                        \Log::warning('CustomFields: Duplicate value attempted', [
+                            'field' => $fieldName,
+                            'value' => $fieldValue,
+                            'customer_id' => $customerId,
+                            'existing_customer_id' => $existingAttribute->user_id
+                        ]);
+                        
+                        throw new \Exception(
+                            sprintf(
+                                __('The value "%s" for field "%s" is already used by another customer.'),
+                                $fieldValue,
+                                $config['label'] ?? $fieldName
+                            )
+                        );
+                    }
+                }
+                
+                // Save the value (even if it's empty - this allows clearing fields)
+                $existingData[ $fieldName ] = $fieldValue;
                 $hasData = true;
                 \Log::info('CustomFields: Found field in request', [
                     'field' => $fieldName,
-                    'value' => $customFieldsInput[ $fieldName ]
+                    'value' => $fieldValue,
+                    'is_empty' => empty($fieldValue)
                 ]);
             }
         }

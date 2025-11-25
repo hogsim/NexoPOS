@@ -2,7 +2,7 @@
 <module>
     <name>NsCustomFields</name>
     <namespace>NsCustomFields</namespace>
-    <version>0.2.0</version>
+    <version>0.2.9</version>
     <description>
         <locale lang="en">Add custom fields to User and Customer profiles.</locale>
     </description>

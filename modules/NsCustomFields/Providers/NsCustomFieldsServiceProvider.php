@@ -37,6 +37,8 @@ class NsCustomFieldsServiceProvider extends ServiceProvider
         Event::listen( CustomerAfterCreatedEvent::class, [ CustomerEvent::class, 'saveCustomFields' ] );
         Event::listen( CustomerAfterUpdatedEvent::class, [ CustomerEvent::class, 'saveCustomFields' ] );
 
+        // Register custom component script - removed as we use inline script now
+        
         // Settings Page - Add to menu
         Hook::addFilter( 'ns-dashboard-menus', function( $menus ) {
             if ( isset( $menus['settings'] ) ) {
